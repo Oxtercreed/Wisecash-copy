@@ -60,6 +60,17 @@ export default function LoginPage() {
             Create your shop free
           </Link>
         </p>
+        {usingLocalCredentials() && (
+          <button
+            onClick={() => {
+              clearSupabaseCredentials();
+              window.location.reload();
+            }}
+            className="mt-6 block w-full text-center text-[11px] text-muted-foreground hover:underline"
+          >
+            Change connected database
+          </button>
+        )}
       </div>
     </div>
   );
