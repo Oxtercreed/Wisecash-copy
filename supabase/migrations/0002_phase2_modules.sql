@@ -615,16 +615,23 @@ alter table public.production_batches enable row level security;
 alter table public.recycle_bin enable row level security;
 
 -- Shop-scoped CRUD helper (all members)
+-- Generic template only for tables that actually carry a shop_id column.
+-- Tables keyed through a parent (order_items) get dedicated policies below.
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'suppliers','supplier_payments','purchases','orders','order_items',
+    'suppliers','supplier_payments','purchases','orders',
     'staff','attendance','salary_payments','assets','todos','appointments',
     'other_income','production_batches'
   ] loop
-    execute format('drop policy if exists "%1$s_all" on public.%1$s;', t);
-    execute format('create policy "%1$s_all" on public.%1$s for all to authenticated using (shop_id = public.my_shop_id()) with check (shop_id = public.my_shop_id());', t);
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = t and column_name = 'shop_id'
+    ) then
+      execute format('drop policy if exists "%1$s_all" on public.%1$s;', t);
+      execute format('create policy "%1$s_all" on public.%1$s for all to authenticated using (shop_id = public.my_shop_id()) with check (shop_id = public.my_shop_id());', t);
+    end if;
   end loop;
 end $$;
 
@@ -633,6 +640,12 @@ drop policy if exists "purchase_items_all" on public.purchase_items;
 create policy "purchase_items_all" on public.purchase_items for all to authenticated
   using (exists (select 1 from public.purchases p where p.id = purchase_id and p.shop_id = public.my_shop_id()))
   with check (exists (select 1 from public.purchases p where p.id = purchase_id and p.shop_id = public.my_shop_id()));
+
+-- Order items follow their order
+drop policy if exists "order_items_all" on public.order_items;
+create policy "order_items_all" on public.order_items for all to authenticated
+  using (exists (select 1 from public.orders o where o.id = order_id and o.shop_id = public.my_shop_id()))
+  with check (exists (select 1 from public.orders o where o.id = order_id and o.shop_id = public.my_shop_id()));
 
 -- Notifications: read + mark read only
 drop policy if exists "notifications_select" on public.notifications;
