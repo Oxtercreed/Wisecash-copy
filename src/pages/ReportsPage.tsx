@@ -1,5 +1,10 @@
 import { useMemo } from "react";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { downloadCsv } from "@/lib/exportData";
+import { useOtherIncome } from "@/hooks/modules";
+import { useProducts } from "@/hooks/useProducts";
+import { useCustomers } from "@/hooks/useCustomers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/misc";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,22 +18,42 @@ export default function ReportsPage() {
   const currency = shop?.currency ?? "TZS";
   const { data: sales = [] } = useSales(90);
   const { data: expenses = [] } = useExpenses(90);
+  const { data: income = [] } = useOtherIncome();
+  const { data: products = [] } = useProducts();
+  const { data: customers = [] } = useCustomers();
 
-  const pnl = useMemo(() => computePnl(sales, expenses), [sales, expenses]);
+  const pnl = useMemo(() => computePnl(sales, expenses, income), [sales, expenses, income]);
   const series = useMemo(() => dailySeries(sales, 14), [sales]);
   const best = useMemo(() => topProducts(sales, 10), [sales]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <div>
-        <h1 className="text-xl font-extrabold">Reports</h1>
-        <p className="text-xs text-muted-foreground">Profit & loss — last 90 days</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-extrabold">Reports</h1>
+          <p className="text-xs text-muted-foreground">Profit & loss — last 90 days</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => downloadCsv("sales.csv", sales.map((x) => ({ invoice: x.invoice_number, date: x.created_at.slice(0, 10), customer: x.customer_name ?? "", method: x.payment_method, subtotal: x.subtotal, discount: x.discount, total: x.total, status: x.status })))}>
+            <Download className="h-3.5 w-3.5" /> Sales
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => downloadCsv("products.csv", products.map((x) => ({ name: x.name, category: x.category_id ?? "", buying_price: x.buying_price, selling_price: x.selling_price, stock: x.stock, unit: x.unit })))}>
+            <Download className="h-3.5 w-3.5" /> Products
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => downloadCsv("customers.csv", customers.map((x) => ({ name: x.name, phone: x.phone ?? "", credit_balance: x.credit_balance })))}>
+            <Download className="h-3.5 w-3.5" /> Customers
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => downloadCsv("expenses.csv", expenses.map((x) => ({ title: x.title, category: x.category, amount: x.amount, date: x.spent_on })))}>
+            <Download className="h-3.5 w-3.5" /> Expenses
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Revenue" value={formatMoney(pnl.revenue, currency)} sub={`${pnl.saleCount} sales`} />
         <StatCard label="COGS" value={formatMoney(pnl.cogs, currency)} sub="cost of goods sold" tone="accent" />
         <StatCard label="Gross profit" value={formatMoney(pnl.grossProfit, currency)} />
+        <StatCard label="Other income" value={formatMoney(pnl.otherIncome, currency)} sub="non-sales income" tone="accent" />
         <StatCard
           label="Net profit"
           value={formatMoney(pnl.netProfit, currency)}

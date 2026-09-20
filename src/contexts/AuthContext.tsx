@@ -11,6 +11,7 @@ interface AuthContextValue {
   shop: ProfileWithShop["shops"];
   role: AppRole | null;
   loading: boolean;
+  profileLoaded: boolean;
   signUp: (args: {
     email: string;
     password: string;
@@ -19,6 +20,12 @@ interface AuthContextValue {
     country: string;
     currency: string;
   }) => Promise<{ error: string | null; needsConfirm: boolean }>;
+  signUpToExistingShop: (args: {
+    email: string;
+    password: string;
+    fullName: string;
+    shopId: string;
+  }) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -32,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfileWithShop | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
@@ -42,9 +50,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       setProfile(null);
+      setProfileLoaded(true);
       return;
     }
-    setProfile((data as ProfileWithShop) ?? null);
+    const loaded = (data as ProfileWithShop) ?? null;
+    if (loaded?.disabled) {
+      // Owner disabled this account — end the session immediately.
+      setProfile(null);
+      setProfileLoaded(true);
+      void supabase.auth.signOut();
+      return;
+    }
+    setProfile(loaded);
+    setProfileLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -67,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSession?.user) void fetchProfile(nextSession.user.id);
       else {
         setProfile(null);
+        setProfileLoaded(false);
         queryClient.clear();
       }
     });
@@ -93,6 +112,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message, needsConfirm: false };
     // If email confirmation is required there is no session yet.
     return { error: null, needsConfirm: !data.session };
+  };
+
+  const signUpToExistingShop: AuthContextValue["signUpToExistingShop"] = async ({ email, password, fullName, shopId }) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          invited_shop_id: shopId,
+          invited_role: "cashier",
+        },
+      },
+    });
+    if (error) return { error: error.message };
+    if (!data.session) {
+      return {
+        error:
+          "Your account was created but this project requires email confirmation. In Supabase: Authentication → Providers → Email → turn OFF 'Confirm email', then sign in.",
+      };
+    }
+    return { error: null };
   };
 
   const signIn: AuthContextValue["signIn"] = async (email, password) => {
@@ -122,7 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         shop: profile?.shops ?? null,
         role: profile?.role ?? null,
         loading,
+        profileLoaded,
         signUp,
+        signUpToExistingShop,
         signIn,
         signInWithGoogle,
         signOut,

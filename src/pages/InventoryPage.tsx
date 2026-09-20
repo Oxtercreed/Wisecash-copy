@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, Package, PackagePlus, Pencil, Plus, Search } from "lucide-react";
+import { AlertTriangle, Package, PackagePlus, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useRecycleBinActions } from "@/hooks/modules";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -19,7 +20,8 @@ export default function InventoryPage() {
   const currency = shop?.currency ?? "TZS";
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
-  const { create, update, archive, adjustStock, createCategory } = useProductMutations();
+  const { create, update, adjustStock, createCategory } = useProductMutations();
+  const { softDelete } = useRecycleBinActions();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "low">("all");
@@ -103,6 +105,21 @@ export default function InventoryPage() {
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => { setEditing(p); setDialogOpen(true); }}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
+                <button
+                  className="text-muted-foreground hover:text-destructive"
+                  title="Move to recycle bin"
+                  onClick={async () => {
+                    if (!window.confirm(`Move "${p.name}" to the recycle bin? You can restore it for 7 days.`)) return;
+                    try {
+                      await softDelete.mutateAsync({ p_entity: "products", p_entity_id: p.id });
+                      toast("Moved to recycle bin", "success");
+                    } catch (err) {
+                      toast(err instanceof Error ? err.message : "Failed", "error");
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             );
           })}

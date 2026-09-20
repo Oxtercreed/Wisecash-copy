@@ -6,11 +6,18 @@ SmartDuka is a mobile-first, offline-capable POS and business assistant for smal
 shops — point-of-sale, inventory, customer credit (book debts), expenses and true
 profit reporting in one fast app. Built with ❤️ for East African dukes, in TZS by default.
 
-> Phase 1 (current): Auth + shop onboarding · Inventory · POS (cash / M-Pesa / split / credit)
-> · Sales history & voids · Customers & credit collection · Expenses · Dashboard & Reports ·
-> offline sale queue · installable PWA.
-> Roadmap: purchases & suppliers, staff/HR, receipts via thermal printers, subscription
-> billing (mobile money), multi-user seats & roles UI, Swahili i18n.
+> **Phase 1:** Auth + shop onboarding · Inventory · POS (cash / M-Pesa / split / credit with
+> camera barcode scanning) · Sales history & voids · Customers & credit collection ·
+> Dashboard & Reports · offline sale queue · installable PWA.
+>
+> **Phase 2 (current):** Suppliers & purchase receiving · Orders (prepare → sell in one tap) ·
+> Production batches · Team (HRM: employees, attendance, salaries) · Assets · To-Do ·
+> Appointments · Other income · Notifications (auto low-stock & credit alerts) · User
+> management with roles & join-code invites · Recycle bin (7-day restore) · CSV exports ·
+> English/Kiswahili toggle.
+>
+> Roadmap: subscription billing (mobile money) + platform admin, push notifications,
+> loyalty points engine, thermal ESC/POS printing, more languages.
 
 ## Tech stack
 
@@ -24,8 +31,9 @@ profit reporting in one fast app. Built with ❤️ for East African dukes, in T
 ## Quick start
 
 1. **Create a free Supabase project** at [supabase.com](https://supabase.com)
-2. **Create the schema**: open Supabase → SQL Editor → paste & run
+2. **Create the schema**: open Supabase → SQL Editor → paste & run both, in order:
    [`supabase/migrations/0001_core_schema.sql`](./supabase/migrations/0001_core_schema.sql)
+   then [`supabase/migrations/0002_phase2_modules.sql`](./supabase/migrations/0002_phase2_modules.sql)
 3. **Configure env**: copy `.env.example` → `.env` and fill in:
    ```
    VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -58,7 +66,13 @@ profit reporting in one fast app. Built with ❤️ for East African dukes, in T
   the server dedupes safely.
 - **Single money engine** — `src/lib/financials.ts` is the only place P&L is computed:
   Revenue = subtotal − discount (tax is a liability, never income); COGS uses
-  snapshotted costs; Net = gross − expenses.
+  snapshotted costs; Net = gross + other income − expenses.
+- **Atomic stock everywhere** — sales, voids, purchases, production and stock
+  adjustments all run through Postgres RPCs that check stock, write the
+  `stock_moves` ledger and notify (low stock, credit sales) in one transaction.
+- **Join codes instead of email invites** — every shop gets an `SD-XXXXXX` code;
+  staff sign up with it and land in the shop as cashiers. The owner promotes them
+  to manager or disables them, all enforced by RLS-backed RPCs.
 
 ## Project structure
 

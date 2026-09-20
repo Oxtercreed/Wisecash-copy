@@ -8,6 +8,7 @@ import { EmptyState, Segmented } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCustomerMutations, useCustomers } from "@/hooks/useCustomers";
+import { useRecycleBinActions } from "@/hooks/modules";
 import { formatMoney, parseAmount } from "@/lib/money";
 import type { Customer } from "@/lib/types";
 
@@ -16,7 +17,8 @@ export default function CustomersPage() {
   const { toast } = useToast();
   const currency = shop?.currency ?? "TZS";
   const { data: customers = [], isLoading } = useCustomers();
-  const { create, update, remove, recordPayment } = useCustomerMutations();
+  const { create, update, recordPayment } = useCustomerMutations();
+  const { softDelete } = useRecycleBinActions();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "debtors">("all");
@@ -93,10 +95,10 @@ export default function CustomersPage() {
                 className="h-8 w-8 text-destructive"
                 onClick={async () => {
                   if (c.credit_balance > 0) return toast("Customer still owes money — collect first", "error");
-                  if (!window.confirm(`Delete ${c.name}?`)) return;
+                  if (!window.confirm(`Move ${c.name} to the recycle bin?`)) return;
                   try {
-                    await remove.mutateAsync(c.id);
-                    toast("Customer removed", "success");
+                    await softDelete.mutateAsync({ p_entity: "customers", p_entity_id: c.id });
+                    toast("Moved to recycle bin", "success");
                   } catch (err) {
                     toast(err instanceof Error ? err.message : "Failed", "error");
                   }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage, type Language } from "@/contexts/LanguageContext";
 import { COUNTRIES } from "@/hooks/useShopSettings";
 import { BRAND } from "@/lib/brand";
 import { parseAmount } from "@/lib/money";
@@ -12,6 +13,7 @@ import { parseAmount } from "@/lib/money";
 export default function SettingsPage() {
   const { shop, profile, signOut } = useAuth();
   const { toast } = useToast();
+  const { language, setLanguage } = useLanguage();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -94,6 +96,27 @@ export default function SettingsPage() {
           <div className="sm:col-span-2">
             <Button onClick={() => void save()} loading={saving}>Save changes</Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Language / Lugha</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            {([["en", "English"], ["sw", "Kiswahili"]] as Array<[Language, string]>).map(([code, label]) => (
+              <button
+                key={code}
+                onClick={() => setLanguage(code)}
+                className={
+                  "flex-1 rounded-lg border p-3 text-sm font-bold transition-colors " +
+                  (language === code ? "border-brand-600 bg-brand-50 text-brand-700" : "bg-card hover:bg-secondary")
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">Menus and key screens follow your choice. More translations coming.</p>
         </CardContent>
       </Card>
 

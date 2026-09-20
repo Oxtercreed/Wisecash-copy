@@ -1,4 +1,4 @@
-import type { Expense, SaleWithItems } from "./types";
+import type { Expense, OtherIncome, SaleWithItems } from "./types";
 
 /**
  * SmartDuka financial engine — the single source of truth for money math.
@@ -15,6 +15,7 @@ export interface PnL {
   cogs: number;
   grossProfit: number;
   expenses: number;
+  otherIncome: number;
   netProfit: number;
   margin: number; // net margin %
   cashIn: number;
@@ -26,7 +27,7 @@ function effectiveSales(sales: SaleWithItems[]) {
   return sales.filter((s) => s && s.status === "completed");
 }
 
-export function computePnl(sales: SaleWithItems[], expenses: Expense[]): PnL {
+export function computePnl(sales: SaleWithItems[], expenses: Expense[], income: OtherIncome[] = []): PnL {
   const done = effectiveSales(sales);
 
   const revenue = done.reduce((sum, s) => sum + Math.max(0, Number(s.subtotal) - Number(s.discount || 0)), 0);
@@ -39,8 +40,9 @@ export function computePnl(sales: SaleWithItems[], expenses: Expense[]): PnL {
   );
 
   const expensesTotal = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  const otherIncomeTotal = income.reduce((sum, i) => sum + Number(i.amount || 0), 0);
   const grossProfit = revenue - cogs;
-  const netProfit = grossProfit - expensesTotal;
+  const netProfit = grossProfit + otherIncomeTotal - expensesTotal;
 
   const cashIn = done.reduce((sum, s) => sum + Number(s.cash_amount || 0) + Number(s.mpesa_amount || 0), 0);
   const creditOut = done.reduce((sum, s) => sum + Number(s.credit_amount || 0), 0);
@@ -50,6 +52,7 @@ export function computePnl(sales: SaleWithItems[], expenses: Expense[]): PnL {
     cogs,
     grossProfit,
     expenses: expensesTotal,
+    otherIncome: otherIncomeTotal,
     netProfit,
     margin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
     cashIn,

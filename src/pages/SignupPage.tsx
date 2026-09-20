@@ -8,9 +8,10 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { COUNTRIES } from "@/hooks/useShopSettings";
 import { BRAND } from "@/lib/brand";
+import { resolveJoinCode } from "@/lib/joinCode";
 
 export default function SignupPage() {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signUpToExistingShop, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -19,6 +20,7 @@ export default function SignupPage() {
   const [countryCode, setCountryCode] = useState("TZ");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const currency = useMemo(
@@ -29,6 +31,36 @@ export default function SignupPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
+
+    // Joining an existing shop via code?
+    let joinedError: string | null = null;
+    if (joinCode.trim()) {
+      const resolved = await resolveJoinCode(joinCode);
+      if (!resolved) {
+        joinedError = "That shop code doesn't match any shop. Check it or leave the field empty to create your own shop.";
+      } else {
+        const { error: joinError } = await signUpToExistingShop({
+          email: email.trim(),
+          password,
+          fullName: fullName.trim(),
+          shopId: resolved,
+        });
+        setLoading(false);
+        if (joinError) {
+          toast(joinError, "error");
+          return;
+        }
+        toast("Welcome to the team! 🎉", "success");
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+    }
+    if (joinedError) {
+      setLoading(false);
+      toast(joinedError, "error");
+      return;
+    }
+
     const { error, needsConfirm } = await signUp({
       email: email.trim(),
       password,
@@ -82,6 +114,9 @@ export default function SignupPage() {
           </Field>
           <Field label="Email">
             <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+          </Field>
+          <Field label="Shop code (optional)" hint="Have a code from your boss? Enter it to join their shop — shop name & country are ignored.">
+            <Input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="SD-XXXXXX" />
           </Field>
           <Field label="Password" hint="At least 6 characters">
             <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" />

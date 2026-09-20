@@ -1,5 +1,8 @@
-import { useMemo, useState } from "react";
-import { Banknote, Minus, Plus, Printer, Search, ShoppingCart, Smartphone, Trash2, UserPlus, Wallet } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Banknote, Minus, Plus, Printer, ScanLine, Search, ShoppingCart, Smartphone, Trash2, UserPlus, Wallet } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { ScannerDialog } from "@/features/pos/ScannerDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,6 +39,38 @@ export default function PosPage() {
   const { data: customers = [] } = useCustomers();
   const { create: createCustomer } = useCustomerMutations();
   const completeSale = useCompleteSale();
+  const queryClient = useQueryClient();
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [prefillOrderId, setPrefillOrderId] = useState<string | null>(null);
+  const [scanKey, setScanKey] = useState(0);
+
+  // One-tap selling: an order can prefill the cart (sent from the Orders page)
+  useEffect(() => {
+    const raw = sessionStorage.getItem("sd_pos_prefill");
+    if (!raw) return;
+    sessionStorage.removeItem("sd_pos_prefill");
+    try {
+      const prefill = JSON.parse(raw) as {
+        items: Array<{ product_id: string | null; product_name: string; quantity: number; unit_price: number }>;
+        customerId: string | null;
+        orderId: string;
+      };
+      setCart(
+        prefill.items.map((it) => ({
+          product_id: it.product_id,
+          name: it.product_name,
+          unit_price: it.unit_price,
+          quantity: it.quantity,
+          tracks_stock: true,
+          stock: Number.MAX_SAFE_INTEGER,
+        }))
+      );
+      if (prefill.customerId) setCustomerId(prefill.customerId);
+      setPrefillOrderId(prefill.orderId);
+    } catch {
+      /* ignore malformed prefill */
+    }
+  }, []);
 
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -154,6 +189,12 @@ export default function PosPage() {
         note: note.trim() || null,
       });
 
+      if (prefillOrderId) {
+        void supabase.from("orders").update({ status: "completed" }).eq("id", prefillOrderId).then(() => {
+          void queryClient.invalidateQueries({ queryKey: ["orders"] });
+        });
+        setPrefillOrderId(null);
+      }
       if (wasQueued) toast("No internet — sale saved and will sync automatically", "info");
       else toast(`Sale ${sale.invoice_number} completed`, "success");
       setReceiptSale(sale);
@@ -299,8 +340,16 @@ export default function PosPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={onSearchEnter}
                 placeholder="Search or scan barcode, then press Enter…"
-                className="pl-9"
+                className="pl-9 pr-11"
               />
+              <button
+                type="button"
+                onClick={() => { setScanKey((k) => k + 1); setScannerOpen(true); }}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2 text-brand-600 transition-colors hover:bg-secondary"
+                aria-label="Scan barcode"
+              >
+                <ScanLine className="h-5 w-5" />
+              </button>
             </div>
             <div className="mt-2 flex gap-1.5 overflow-x-auto scrollbar-thin pb-1">
               <button
@@ -417,6 +466,22 @@ export default function PosPage() {
           </Button>
         </div>
       </Dialog>
+
+      <ScannerDialog
+        key={scanKey}
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetect={(code) => {
+          const q = code.toLowerCase();
+          const match = products.find((p) => (p.barcode ?? "").toLowerCase() === q) ?? products.find((p) => p.name.toLowerCase().includes(q));
+          if (match) {
+            addToCart(match);
+            toast(`${match.name} added`, "success");
+          } else {
+            toast(`No product with barcode ${code}`, "error");
+          }
+        }}
+      />
 
       {/* Payment method icons legend (visual only) */}
       <div className="mt-6 hidden items-center justify-center gap-6 text-[11px] text-muted-foreground lg:flex">

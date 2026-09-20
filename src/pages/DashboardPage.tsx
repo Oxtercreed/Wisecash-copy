@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, Skeleton, StatCard } from "@/components/ui/misc";
 import { useAuth } from "@/contexts/AuthContext";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useOtherIncome } from "@/hooks/modules";
 import { useProducts } from "@/hooks/useProducts";
 import { useSales } from "@/hooks/useSales";
 import { computePnl, dailySeries, paymentMix, topProducts } from "@/lib/financials";
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const currency = shop?.currency ?? "TZS";
   const { data: sales, isLoading } = useSales(30);
   const { data: expenses = [] } = useExpenses(30);
+  const { data: income = [] } = useOtherIncome();
   const { data: products = [] } = useProducts();
 
   const stats = useMemo(() => {
@@ -25,9 +27,10 @@ export default function DashboardPage() {
     const today = new Date().toISOString().slice(0, 10);
     const todaySales = sales.filter((s) => s.created_at.slice(0, 10) === today);
     const todayExpenses = expenses.filter((e) => e.spent_on === today);
+    const todayIncome = income.filter((e) => e.earned_on === today);
     return {
-      today: computePnl(todaySales, todayExpenses),
-      month: computePnl(sales, expenses),
+      today: computePnl(todaySales, todayExpenses, todayIncome),
+      month: computePnl(sales, expenses, income),
       series: dailySeries(sales, 7),
       mix: paymentMix(sales),
       top: topProducts(sales, 5),
@@ -37,7 +40,7 @@ export default function DashboardPage() {
         .slice(0, 6),
       recent: sales.slice(0, 6),
     };
-  }, [sales, expenses, products]);
+  }, [sales, expenses, income, products]);
 
   if (isLoading || !stats) {
     return (
@@ -199,6 +202,7 @@ export default function DashboardPage() {
           <Row label="Revenue" value={formatMoney(stats.month.revenue, currency)} />
           <Row label="Cost of goods sold" value={`-${formatMoney(stats.month.cogs, currency)}`} muted />
           <Row label="Gross profit" value={formatMoney(stats.month.grossProfit, currency)} bold />
+          {stats.month.otherIncome > 0 && <Row label="Other income" value={`+${formatMoney(stats.month.otherIncome, currency)}`} muted />}
           <Row label="Expenses" value={`-${formatMoney(stats.month.expenses, currency)}`} muted />
           <div className="border-t pt-1.5">
             <Row label="Net profit" value={formatMoney(stats.month.netProfit, currency)} bold />
