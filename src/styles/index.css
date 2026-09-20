@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 80 24% 96%;
+    --foreground: 160 24% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 160 24% 12%;
+    --primary: 152 70% 27%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 18% 92%;
+    --secondary-foreground: 160 22% 20%;
+    --muted: 150 14% 93%;
+    --muted-foreground: 155 9% 42%;
+    --accent: 38 96% 50%;
+    --accent-foreground: 30 60% 14%;
+    --destructive: 0 74% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 14% 88%;
+    --input: 150 12% 84%;
+    --ring: 152 70% 30%;
+    --radius: 0.85rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04";
+  }
+
+  /* Hide number input spinners for cleaner price fields */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+}
+
+/* ---------- Receipt printing ---------- */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    width: 72mm;
+    padding: 4mm;
+    color: #000;
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
