@@ -11,15 +11,16 @@ create table if not exists public.platform_admins (
   created_at timestamptz not null default now()
 );
 
-alter table public.platform_admins enable row level security;
-drop policy if exists "platform_admins_select" on public.platform_admins;
-create policy "platform_admins_select" on public.platform_admins for select to authenticated
-  using (user_id = auth.uid() or public.is_platform_admin());
-
+-- Helper must exist BEFORE the policy that references it
 create or replace function public.is_platform_admin()
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.platform_admins where user_id = auth.uid())
 $$;
+
+alter table public.platform_admins enable row level security;
+drop policy if exists "platform_admins_select" on public.platform_admins;
+create policy "platform_admins_select" on public.platform_admins for select to authenticated
+  using (user_id = auth.uid() or public.is_platform_admin());
 
 -- First-run claim: only succeeds while the table is empty
 create or replace function public.claim_platform_admin()
