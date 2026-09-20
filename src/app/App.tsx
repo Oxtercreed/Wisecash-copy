@@ -34,6 +34,8 @@ const AppointmentsPage = lazy(() => import("@/pages/AppointmentsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const UsersPage = lazy(() => import("@/pages/UsersPage"));
 const RecycleBinPage = lazy(() => import("@/pages/RecycleBinPage"));
+const BillingPage = lazy(() => import("@/pages/BillingPage"));
+const PlatformAdminPage = lazy(() => import("@/pages/PlatformAdminPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -119,6 +121,8 @@ export default function App() {
                     <Route path="/users" element={<UsersPage />} />
                     <Route path="/recycle-bin" element={<RecycleBinPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/billing" element={<BillingPage />} />
+                    <Route path="/platform" element={<PlatformAdminPage />} />
                   </Route>
 
                   <Route path="/sales/new" element={<Navigate to="/pos" replace />} />

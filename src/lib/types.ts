@@ -61,6 +61,7 @@ export interface Customer {
   phone: string | null;
   note: string | null;
   credit_balance: number;
+  loyalty_points: number;
   created_at: string;
   updated_at: string;
 }

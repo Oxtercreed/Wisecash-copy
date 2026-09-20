@@ -10,14 +10,28 @@ profit reporting in one fast app. Built with ❤️ for East African dukes, in T
 > camera barcode scanning) · Sales history & voids · Customers & credit collection ·
 > Dashboard & Reports · offline sale queue · installable PWA.
 >
-> **Phase 2 (current):** Suppliers & purchase receiving · Orders (prepare → sell in one tap) ·
+> **Phase 2:** Suppliers & purchase receiving · Orders (prepare → sell in one tap) ·
 > Production batches · Team (HRM: employees, attendance, salaries) · Assets · To-Do ·
 > Appointments · Other income · Notifications (auto low-stock & credit alerts) · User
 > management with roles & join-code invites · Recycle bin (7-day restore) · CSV exports ·
 > English/Kiswahili toggle.
 >
-> Roadmap: subscription billing (mobile money) + platform admin, push notifications,
-> loyalty points engine, thermal ESC/POS printing, more languages.
+> **Phase 3 (final):** Subscriptions — 14-day free trial, 25,000 TZS/month plans (1/3/6/12
+> months), mobile-money payment submission & platform-admin approval, paywall enforcement
+> with grace period · **Platform admin console** (all shops, MRR, payment queue) ·
+> **Loyalty engine** (1 pt / 10,000 spent, redeem at POS) · Full JSON backup export ·
+> First-run platform-owner claim.
+
+## Monetization flow (Phase 3)
+
+1. Every new shop starts a **14-day free trial** automatically.
+2. When the trial ends there's a **7-day grace period** with warnings — then the app locks
+   to the Billing page (data is never deleted).
+3. The shop sends money to your mobile-money number, submits the reference on the Billing
+   page, and you (the **platform admin**) approve it in the console — their plan extends
+   instantly. Status is computed server-side, so no cron jobs are needed.
+4. Claim platform ownership at `/platform` — the first account to claim wins (that's you,
+   on your own deployment). Update the payment numbers in `src/lib/subscription.ts`.
 
 ## Tech stack
 
@@ -31,9 +45,10 @@ profit reporting in one fast app. Built with ❤️ for East African dukes, in T
 ## Quick start
 
 1. **Create a free Supabase project** at [supabase.com](https://supabase.com)
-2. **Create the schema**: open Supabase → SQL Editor → paste & run both, in order:
-   [`supabase/migrations/0001_core_schema.sql`](./supabase/migrations/0001_core_schema.sql)
-   then [`supabase/migrations/0002_phase2_modules.sql`](./supabase/migrations/0002_phase2_modules.sql)
+2. **Create the schema**: open Supabase → SQL Editor → paste & run all three, in order:
+   [`supabase/migrations/0001_core_schema.sql`](./supabase/migrations/0001_core_schema.sql) →
+   [`0002_phase2_modules.sql`](./supabase/migrations/0002_phase2_modules.sql) →
+   [`0003_subscriptions_loyalty.sql`](./supabase/migrations/0003_subscriptions_loyalty.sql)
 3. **Configure env**: copy `.env.example` → `.env` and fill in:
    ```
    VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -73,6 +88,10 @@ profit reporting in one fast app. Built with ❤️ for East African dukes, in T
 - **Join codes instead of email invites** — every shop gets an `SD-XXXXXX` code;
   staff sign up with it and land in the shop as cashiers. The owner promotes them
   to manager or disables them, all enforced by RLS-backed RPCs.
+- **Cron-free billing** — subscription state (trialing / active / grace / expired) is
+  derived from timestamps on every read, so expiries just work without scheduled jobs.
+- **Loyalty inside the sale transaction** — points are earned in the same atomic
+  `complete_sale` RPC that moves stock, so they can never drift out of sync.
 
 ## Project structure
 

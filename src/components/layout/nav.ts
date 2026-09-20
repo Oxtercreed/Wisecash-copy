@@ -66,6 +66,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/users", labelKey: "nav.users", fallback: "Users", icon: ShieldCheck },
       { to: "/recycle-bin", labelKey: "nav.bin", fallback: "Recycle Bin", icon: Trash },
+      { to: "/billing", labelKey: "nav.billing", fallback: "Billing", icon: Wallet },
       { to: "/settings", labelKey: "nav.settings", fallback: "Settings", icon: Settings },
     ],
   },

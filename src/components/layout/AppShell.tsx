@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Bell, Circle, CloudOff, LogOut, MoreHorizontal, RefreshCw, Store } from "lucide-react";
+import { AlarmClock, Bell, Circle, CloudOff, LogOut, MoreHorizontal, RefreshCw, Store } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -85,6 +87,41 @@ function NotificationBell() {
         </span>
       )}
     </button>
+  );
+}
+
+/**
+ * Paywall: expired shops are routed to /billing (the only page that still works),
+ * and a gentle banner shows during the last trial days / grace period.
+ */
+function SubscriptionGate({ children }: { children: React.ReactNode }) {
+  const { data: sub, isLoading } = useSubscription();
+  const location = useLocation();
+
+  if (isLoading || !sub || sub.is_platform) return children;
+  if (sub.state === "expired" && location.pathname !== "/billing") {
+    return <Navigate to="/billing" replace />;
+  }
+
+  const warn =
+    sub.state === "grace" ||
+    (sub.state === "trialing" && sub.days_left <= 5);
+
+  return (
+    <>
+      {warn && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-amberbrand-400/30 bg-amberbrand-400/10 px-4 py-2 text-xs font-semibold text-amberbrand-600 lg:px-8 no-print">
+          <AlarmClock className="h-3.5 w-3.5 shrink-0" />
+          {sub.state === "grace"
+            ? `Subscription payment due — ${Math.max(0, sub.days_left)} day(s) left before selling locks.`
+            : `${Math.max(0, sub.days_left)} day(s) left in your free trial.`}
+          <NavLink to="/billing" className="ml-auto">
+            <Button size="sm" variant="accent" className="h-7 px-3 text-[11px]">Subscribe now</Button>
+          </NavLink>
+        </div>
+      )}
+      {children}
+    </>
   );
 }
 
@@ -180,9 +217,11 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-24 pt-4 lg:px-8 lg:pb-10">
-          <Outlet />
-        </main>
+        <SubscriptionGate>
+          <main className="flex-1 px-4 pb-24 pt-4 lg:px-8 lg:pb-10">
+            <Outlet />
+          </main>
+        </SubscriptionGate>
       </div>
 
       {/* Mobile bottom nav */}

@@ -80,6 +80,7 @@ export default function CustomersPage() {
                 <p className="truncate text-sm font-bold">{c.name}</p>
                 <p className="truncate text-xs text-muted-foreground">{c.phone ?? "—"}</p>
               </div>
+              {c.loyalty_points > 0 && <Badge variant="default">⭐ {c.loyalty_points} pts</Badge>}
               {c.credit_balance > 0 && <Badge variant="warning">owes {formatMoney(c.credit_balance, currency)}</Badge>}
               {c.credit_balance > 0 && (
                 <Button size="sm" onClick={() => setPaying(c)}>

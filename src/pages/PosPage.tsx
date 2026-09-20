@@ -15,6 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCategories, useProductMutations, useProducts } from "@/hooks/useProducts";
 import { useCustomers, useCustomerMutations } from "@/hooks/useCustomers";
 import { useCompleteSale } from "@/hooks/useSales";
+import { useRedeemPoints } from "@/hooks/useSubscription";
+import { LOYALTY_POINT_VALUE } from "@/lib/subscription";
 import { formatMoney, parseAmount } from "@/lib/money";
 import type { PaymentMethod, Product, SaleWithItems } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,7 @@ export default function PosPage() {
   const { data: customers = [] } = useCustomers();
   const { create: createCustomer } = useCustomerMutations();
   const completeSale = useCompleteSale();
+  const redeemPoints = useRedeemPoints();
   const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [prefillOrderId, setPrefillOrderId] = useState<string | null>(null);
@@ -293,6 +296,25 @@ export default function PosPage() {
               Balance: {formatMoney(Math.max(0, total - parseAmount(cashPart) - parseAmount(mpesaPart)), currency)}
             </p>
           </div>
+        )}
+
+        {selectedCustomer && selectedCustomer.loyalty_points > 0 && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const value = await redeemPoints.mutateAsync({ customerId: selectedCustomer.id, points: selectedCustomer.loyalty_points });
+                setDiscountInput(String(Math.min(subtotal, discount + value)));
+                toast(`Used ${selectedCustomer.loyalty_points} points — ${formatMoney(value, currency)} off`, "success");
+              } catch (err) {
+                toast(err instanceof Error ? err.message : "Failed", "error");
+              }
+            }}
+            disabled={redeemPoints.isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-brand-400 bg-brand-50/60 px-3 py-2 text-xs font-bold text-brand-700 transition-colors hover:bg-brand-100"
+          >
+            ⭐ Use {selectedCustomer.loyalty_points} loyalty points — worth {formatMoney(selectedCustomer.loyalty_points * LOYALTY_POINT_VALUE, currency)}
+          </button>
         )}
 
         {payTab === "credit" && (

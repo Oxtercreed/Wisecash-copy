@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Download, LogOut, Settings as SettingsIcon, Smartphone } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Crown, Download, LogOut, Settings as SettingsIcon, Smartphone } from "lucide-react";
+import { usePlatformAdmin } from "@/hooks/useSubscription";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
@@ -14,6 +17,38 @@ export default function SettingsPage() {
   const { shop, profile, signOut } = useAuth();
   const { toast } = useToast();
   const { language, setLanguage } = useLanguage();
+  const { isPlatform } = usePlatformAdmin();
+  const [exporting, setExporting] = useState(false);
+
+  async function exportBackup() {
+    setExporting(true);
+    try {
+      const tables = ["products", "categories", "customers", "suppliers", "sales", "expenses", "staff", "assets"] as const;
+      const backup: Record<string, unknown[]> = {};
+      for (const table of tables) {
+        const query = supabase.from(table).select(table === "sales" ? "*, sale_items(*)" : "*").limit(5000);
+        const { data, error } = await query;
+        if (error) throw error;
+        backup[table] = data ?? [];
+      }
+      const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), shop: shop?.name, ...backup }, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `smartduka-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast("Backup downloaded", "success");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Export failed", "error");
+    } finally {
+      setExporting(false);
+    }
+  }
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -119,6 +154,29 @@ export default function SettingsPage() {
           <p className="mt-2 text-xs text-muted-foreground">Menus and key screens follow your choice. More translations coming.</p>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Data</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold">Backup export</p>
+            <p className="text-xs text-muted-foreground">Download everything (products, customers, sales, expenses…) as one JSON file.</p>
+          </div>
+          <Button variant="outline" loading={exporting} onClick={() => void exportBackup()}>
+            <Download className="h-4 w-4" /> Export backup
+          </Button>
+        </CardContent>
+      </Card>
+
+      {isPlatform && (
+        <Card className="border-amberbrand-400/40">
+          <CardHeader><CardTitle className="flex items-center gap-2"><Crown className="h-4 w-4 text-amberbrand-500" /> Platform admin</CardTitle></CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">Review subscription payments and see every shop on your platform.</p>
+            <Link to="/platform"><Button variant="accent" size="sm">Open console</Button></Link>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Your account</CardTitle></CardHeader>
