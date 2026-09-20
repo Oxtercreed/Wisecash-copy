@@ -22,7 +22,12 @@ export default function LoginPage() {
     const { error } = await signIn(email.trim(), password);
     setLoading(false);
     if (error) {
-      toast(error, "error");
+      toast(
+        error.toLowerCase().includes("not confirmed")
+          ? "Email confirmation is still ON. In Supabase: Authentication → Providers → Email → turn OFF 'Confirm email'. If that account was created before, delete it in Supabase (Authentication → Users) and sign up again."
+          : error,
+        "error"
+      );
       return;
     }
     navigate("/dashboard", { replace: true });

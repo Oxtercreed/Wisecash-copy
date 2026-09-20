@@ -44,11 +44,15 @@ export default function SignupPage() {
       return;
     }
     if (needsConfirm) {
-      toast("Check your email to confirm your account, then sign in.", "success");
+      // Only happens if "Confirm email" is still enabled in the Supabase dashboard.
+      toast(
+        "Email confirmation is still ON. In Supabase: Authentication → Providers → Email → turn OFF 'Confirm email', then sign up again.",
+        "info"
+      );
       navigate("/login", { replace: true });
-    } else {
-      navigate("/dashboard", { replace: true });
+      return;
     }
+    navigate("/dashboard", { replace: true });
   }
 
   return (
