@@ -6,6 +6,7 @@ import { Field, Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { BRAND } from "@/lib/brand";
+import { clearSupabaseCredentials, usingLocalCredentials } from "@/lib/supabase";
 
 export default function LoginPage() {
   const { signIn, signInWithGoogle } = useAuth();
