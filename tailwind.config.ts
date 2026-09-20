@@ -77,10 +77,15 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.25s ease-out",
         "fade-in": "fade-in 0.2s ease-out",
+        float: "float 3.2s ease-in-out infinite",
       },
     },
   },

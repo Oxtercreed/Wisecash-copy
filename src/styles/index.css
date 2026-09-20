@@ -24,6 +24,26 @@
     --radius: 0.85rem;
   }
 
+  .dark {
+    --background: 160 16% 7%;
+    --foreground: 150 20% 93%;
+    --card: 160 14% 10%;
+    --card-foreground: 150 20% 93%;
+    --primary: 152 58% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 12% 16%;
+    --secondary-foreground: 150 15% 85%;
+    --muted: 160 12% 14%;
+    --muted-foreground: 150 10% 62%;
+    --accent: 38 94% 55%;
+    --accent-foreground: 30 60% 12%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 12% 18%;
+    --input: 160 12% 22%;
+    --ring: 152 58% 45%;
+  }
+
   * {
     @apply border-border;
   }
@@ -35,6 +55,11 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv02", "cv03", "cv04";
+    transition: background-color 0.25s ease, color 0.15s ease;
+  }
+
+  ::selection {
+    background: hsl(152 70% 27% / 0.25);
   }
 
   /* Hide number input spinners for cleaner price fields */
@@ -55,6 +80,19 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply rounded-full bg-border;
+  }
+  /* Soft aurora mesh for hero sections */
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 20% 0%, hsl(152 70% 30% / 0.16) 0px, transparent 55%),
+      radial-gradient(at 85% 10%, hsl(38 96% 50% / 0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, hsl(160 60% 40% / 0.10) 0px, transparent 55%);
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 34px 34px;
   }
 }
 

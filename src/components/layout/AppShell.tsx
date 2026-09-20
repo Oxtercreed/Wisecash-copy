@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { AlarmClock, Bell, Circle, CloudOff, LogOut, MoreHorizontal, RefreshCw, Store } from "lucide-react";
+import { AlarmClock, Bell, Circle, CloudOff, LogOut, Moon, MoreHorizontal, RefreshCw, Store, Sun } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,19 @@ function SyncPill() {
         </>
       )}
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+      aria-label="Toggle dark mode"
+      onClick={toggleTheme}
+    >
+      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+    </button>
   );
 }
 
@@ -142,7 +156,7 @@ export function AppShell() {
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col overflow-y-auto bg-brand-950 text-white lg:flex no-print scrollbar-thin">
         <div className="flex items-center gap-2.5 px-5 py-5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-soft">
             <Store className="h-5 w-5" />
           </span>
           <div>
@@ -203,7 +217,7 @@ export function AppShell() {
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur lg:px-8 no-print">
           <div className="flex items-center gap-2 lg:hidden">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-soft">
               <Store className="h-4 w-4" />
             </span>
             <span className="text-sm font-extrabold">{BRAND.name}</span>
@@ -212,6 +226,7 @@ export function AppShell() {
             <h1 className="text-base font-extrabold">{shop?.name ?? "My Shop"}</h1>
           </div>
           <div className="flex items-center gap-1">
+            <ThemeToggle />
             <NotificationBell />
             <SyncPill />
           </div>

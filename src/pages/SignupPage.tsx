@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { COUNTRIES } from "@/hooks/useShopSettings";
 import { BRAND } from "@/lib/brand";
 import { resolveJoinCode } from "@/lib/joinCode";
+import { AuthLayout } from "@/components/layout/AuthLayout";
 
 export default function SignupPage() {
   const { signUp, signUpToExistingShop, signInWithGoogle } = useAuth();
@@ -88,15 +88,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-soft">
-            <Store className="h-6 w-6" />
-          </span>
-          <h1 className="text-xl font-extrabold">Create your shop</h1>
-          <p className="text-sm text-muted-foreground">Free · takes less than a minute</p>
-        </div>
+    <AuthLayout title="Create your shop" subtitle="Free 14-day trial · takes less than a minute">
+      <div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-lg border bg-card p-5 shadow-soft">
           <Field label="Your name">
@@ -130,13 +123,13 @@ export default function SignupPage() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/login" className="font-bold text-brand-700 hover:underline">
-            Sign in
-          </Link>
-        </p>
       </div>
-    </div>
+      <p className="mt-5 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link to="/login" className="font-bold text-brand-600 hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
